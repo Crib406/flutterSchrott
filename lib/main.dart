@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 
+import 'core/activity/activity_wake_guard.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/containers/data/repositories/hive_container_repository.dart';
@@ -37,6 +38,11 @@ class SpeditionApp extends StatelessWidget {
       theme: AppTheme.light,
       routerConfig: AppRouter.router,
       debugShowCheckedModeBanner: false,
+      // Hält das Display wach, solange der Nutzer aktiv ist; nach 5 Minuten
+      // ohne Interaktion darf der Bildschirm wieder ausgehen.
+      builder: (context, child) => ActivityWakeGuard(
+        child: child ?? const SizedBox.shrink(),
+      ),
     );
   }
 }

@@ -33,6 +33,7 @@ dependencies:
   hive_ce_flutter: ^2.3.4
   supercluster: ^3.2.0
   url_launcher: ^6.3.2
+  wakelock_plus: ^1.6.1
 
 dev_dependencies:
   flutter_test:
