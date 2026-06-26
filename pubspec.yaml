@@ -1,0 +1,49 @@
+name: spedition
+description: "Spedition-App – Karten & Touren für Fahrer (iOS zuerst)."
+# Privates Paket – nicht auf pub.dev veröffentlichen.
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^3.3.2
+  go_router: ^17.3.0
+  # Karten-Plugin: offizielles flutter-maplibre-gl der MapLibre-Org
+  # (NICHT das "maplibre"-Rewrite – das unterstützt iOS noch nicht).
+  maplibre_gl: ^0.26.2
+  # @immutable für die Domain-Entities, ohne Flutter-Abhängigkeit zu ziehen.
+  meta: ^1.18.0
+  riverpod_annotation: ^4.0.3
+  geolocator: ^14.0.3
+  http: ^1.6.0
+  # MediaType für korrekten Multipart-Content-Type beim Foto-Upload.
+  http_parser: ^4.1.2
+  # Foto vor dem Scan-Upload verkleinern/komprimieren (reines Dart).
+  image: ^4.9.1
+  image_picker: ^1.2.2
+  connectivity_plus: ^7.1.1
+  hive_ce: ^2.19.3
+  hive_ce_flutter: ^2.3.4
+  supercluster: ^3.2.0
+  url_launcher: ^6.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # Code-Gen für Riverpod-Provider.
+  # Generieren mit:  dart run build_runner build
+  # Watch-Modus:     dart run build_runner watch
+  build_runner: ^2.15.0
+  flutter_lints: ^6.0.0
+  riverpod_generator: ^4.0.4
+
+flutter:
+  uses-material-design: true
