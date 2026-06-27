@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:http/http.dart' as http;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/connectivity/connectivity_providers.dart';
-import '../../../settings/presentation/providers/settings_providers.dart';
+import '../../../auth/data/sources/auth_http_client.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/repositories/hive_container_repository.dart';
 import '../../data/repositories/hive_pending_operation_store.dart';
 import '../../data/sources/container_api.dart';
@@ -20,13 +22,30 @@ part 'container_providers.g.dart';
 
 /// REST-Client der Container-Backend-API.
 ///
-/// Base-URL und API-Key kommen aus den (vom Nutzer bearbeitbaren) Einstellungen.
-/// Wird beobachtet, sodass ein Speichern in den Einstellungen die Anbindung
-/// sofort umschaltet.
+/// Base-URL und Bearer-Token kommen aus der aktiven [AuthSession]. Wird
+/// beobachtet, sodass Login/Logout (oder ein abgelaufenes Token) die Anbindung
+/// sofort umschaltet. Der Client kapselt Auth-Header und 401-Handling: ein
+/// serverseitiges 401 verwirft die Session zentral (`sessionExpired`).
 @riverpod
 ContainerApi containerApi(Ref ref) {
-  final settings = ref.watch(settingsControllerProvider);
-  return ContainerApi(baseUrl: settings.baseUrl, apiKey: settings.apiKey);
+  final session = ref.watch(authControllerProvider);
+  if (session == null) {
+    // Nicht angemeldet → unkonfigurierter Client (löst keine Requests aus).
+    final idle = http.Client();
+    ref.onDispose(idle.close);
+    return ContainerApi(baseUrl: '', token: '', client: idle);
+  }
+  final client = AuthHttpClient(
+    token: session.token,
+    onUnauthorized: () =>
+        ref.read(authControllerProvider.notifier).sessionExpired(),
+  );
+  ref.onDispose(client.close);
+  return ContainerApi(
+    baseUrl: session.baseUrl,
+    token: session.token,
+    client: client,
+  );
 }
 
 /// Lokaler Container-Cache (Hive) für die Offline-Anzeige.

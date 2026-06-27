@@ -1,25 +1,56 @@
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../features/auth/domain/entities/auth_session.dart';
+import '../../features/auth/presentation/providers/auth_providers.dart';
+import '../../features/auth/presentation/screens/account_screen.dart';
+import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/containers/presentation/screens/queue_screen.dart';
 import '../../features/containers/presentation/screens/scan_screen.dart';
 import '../../features/map/presentation/screens/map_screen.dart';
-import '../../features/settings/presentation/screens/settings_screen.dart';
 import 'app_routes.dart';
 import 'app_shell.dart';
 
+part 'app_router.g.dart';
+
 /// Zentrales go_router-Setup der App.
 ///
-/// Beide Haupt-Tabs liegen in einer [StatefulShellRoute.indexedStack], damit
+/// Der Login liegt als eigene Route AUSSERHALB der [StatefulShellRoute]; die
+/// drei Haupt-Tabs (Karte/Scan/Warteschlange) plus Konto liegen darin, damit
 /// die untere Navigationsleiste ([AppShell]) dauerhaft sichtbar bleibt und der
-/// Zustand jedes Tabs erhalten wird. Features liefern nur ihre Screens; das
-/// Routing-Wissen bleibt an dieser Stelle gebündelt.
-abstract final class AppRouter {
-  const AppRouter._();
+/// Zustand jedes Tabs erhalten wird.
+///
+/// Der [redirect] erzwingt den Anmeldestatus: ohne Session geht es zum Login,
+/// mit Session weg vom Login. Über `refreshListenable` reagiert der Router
+/// sofort auf Login/Logout/abgelaufenes Token.
+@Riverpod(keepAlive: true)
+GoRouter goRouter(Ref ref) {
+  // Feuert bei jeder Auth-Änderung und stößt damit `redirect` neu an.
+  final refresh = ValueNotifier<AuthSession?>(ref.read(authControllerProvider));
+  ref.onDispose(refresh.dispose);
+  ref.listen(authControllerProvider, (_, next) => refresh.value = next);
 
-  /// Einzige Router-Instanz der App.
-  static final GoRouter router = GoRouter(
+  return GoRouter(
     initialLocation: AppRoutes.mapPath,
+    refreshListenable: refresh,
+    redirect: (context, state) {
+      final loggedIn = ref.read(authControllerProvider) != null;
+      final loggingIn = state.matchedLocation == AppRoutes.loginPath;
+      if (!loggedIn) {
+        return loggingIn ? null : AppRoutes.loginPath;
+      }
+      if (loggingIn) {
+        return AppRoutes.mapPath;
+      }
+      return null;
+    },
     routes: <RouteBase>[
+      GoRoute(
+        path: AppRoutes.loginPath,
+        name: AppRoutes.loginName,
+        builder: (context, state) => const LoginScreen(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             AppShell(navigationShell: navigationShell),
@@ -54,9 +85,9 @@ abstract final class AppRouter {
           StatefulShellBranch(
             routes: <RouteBase>[
               GoRoute(
-                path: AppRoutes.settingsPath,
-                name: AppRoutes.settingsName,
-                builder: (context, state) => const SettingsScreen(),
+                path: AppRoutes.accountPath,
+                name: AppRoutes.accountName,
+                builder: (context, state) => const AccountScreen(),
               ),
             ],
           ),

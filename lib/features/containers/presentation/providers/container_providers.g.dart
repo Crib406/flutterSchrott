@@ -10,27 +10,30 @@ part of 'container_providers.dart';
 // ignore_for_file: type=lint, type=warning
 /// REST-Client der Container-Backend-API.
 ///
-/// Base-URL und API-Key kommen aus den (vom Nutzer bearbeitbaren) Einstellungen.
-/// Wird beobachtet, sodass ein Speichern in den Einstellungen die Anbindung
-/// sofort umschaltet.
+/// Base-URL und Bearer-Token kommen aus der aktiven [AuthSession]. Wird
+/// beobachtet, sodass Login/Logout (oder ein abgelaufenes Token) die Anbindung
+/// sofort umschaltet. Der Client kapselt Auth-Header und 401-Handling: ein
+/// serverseitiges 401 verwirft die Session zentral (`sessionExpired`).
 
 @ProviderFor(containerApi)
 final containerApiProvider = ContainerApiProvider._();
 
 /// REST-Client der Container-Backend-API.
 ///
-/// Base-URL und API-Key kommen aus den (vom Nutzer bearbeitbaren) Einstellungen.
-/// Wird beobachtet, sodass ein Speichern in den Einstellungen die Anbindung
-/// sofort umschaltet.
+/// Base-URL und Bearer-Token kommen aus der aktiven [AuthSession]. Wird
+/// beobachtet, sodass Login/Logout (oder ein abgelaufenes Token) die Anbindung
+/// sofort umschaltet. Der Client kapselt Auth-Header und 401-Handling: ein
+/// serverseitiges 401 verwirft die Session zentral (`sessionExpired`).
 
 final class ContainerApiProvider
     extends $FunctionalProvider<ContainerApi, ContainerApi, ContainerApi>
     with $Provider<ContainerApi> {
   /// REST-Client der Container-Backend-API.
   ///
-  /// Base-URL und API-Key kommen aus den (vom Nutzer bearbeitbaren) Einstellungen.
-  /// Wird beobachtet, sodass ein Speichern in den Einstellungen die Anbindung
-  /// sofort umschaltet.
+  /// Base-URL und Bearer-Token kommen aus der aktiven [AuthSession]. Wird
+  /// beobachtet, sodass Login/Logout (oder ein abgelaufenes Token) die Anbindung
+  /// sofort umschaltet. Der Client kapselt Auth-Header und 401-Handling: ein
+  /// serverseitiges 401 verwirft die Session zentral (`sessionExpired`).
   ContainerApiProvider._()
     : super(
         from: null,
@@ -64,7 +67,7 @@ final class ContainerApiProvider
   }
 }
 
-String _$containerApiHash() => r'dab250781cae659ebcc19384661090184647f361';
+String _$containerApiHash() => r'd656d4b62e912aa94effdb9e64af3a773d2374ad';
 
 /// Lokaler Container-Cache (Hive) für die Offline-Anzeige.
 

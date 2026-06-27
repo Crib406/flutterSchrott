@@ -5,6 +5,10 @@
 abstract final class AppRoutes {
   const AppRoutes._();
 
+  /// Anmeldung (außerhalb der Tab-Shell).
+  static const String loginPath = '/login';
+  static const String loginName = 'login';
+
   /// Startseite mit der Vollbild-Karte.
   static const String mapPath = '/';
   static const String mapName = 'map';
@@ -17,7 +21,7 @@ abstract final class AppRoutes {
   static const String queuePath = '/queue';
   static const String queueName = 'queue';
 
-  /// Einstellungen-Seite.
-  static const String settingsPath = '/settings';
-  static const String settingsName = 'settings';
+  /// Konto-Seite (Nutzer + Logout). Ersetzt die frühere Einstellungsseite.
+  static const String accountPath = '/account';
+  static const String accountName = 'account';
 }

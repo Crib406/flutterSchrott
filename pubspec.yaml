@@ -29,6 +29,8 @@ dependencies:
   image: ^4.9.1
   image_picker: ^1.2.2
   connectivity_plus: ^7.1.1
+  # Sichere Ablage des JWT (iOS Keychain / Android Keystore).
+  flutter_secure_storage: ^10.3.1
   hive_ce: ^2.19.3
   hive_ce_flutter: ^2.3.4
   supercluster: ^3.2.0

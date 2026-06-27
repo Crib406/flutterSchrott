@@ -523,10 +523,8 @@ class _MapViewState extends ConsumerState<MapView> {
   }
 
   Future<void> _pickContainer(List<ContainerItem> items) async {
-    final picked = await ContainerPickerSheet.show(context, items: items);
-    if (picked != null && mounted) {
-      await ContainerInfoSheet.show(context, item: picked);
-    }
+    // Selbstständiges Sheet: sortierte, aufklappbare Liste – kein zweiter Schritt.
+    await ContainerPickerSheet.show(context, items: items);
   }
 
   /// Alle Container im Umkreis von [_coincidentRadiusMeters] um [item] (inkl.

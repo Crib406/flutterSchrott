@@ -4,11 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive.dart';
+import 'package:http/http.dart' as http;
+import 'package:spedition/features/auth/domain/entities/auth_session.dart';
+import 'package:spedition/features/auth/domain/entities/auth_user.dart';
+import 'package:spedition/features/auth/presentation/providers/auth_providers.dart';
+import 'package:spedition/features/auth/presentation/screens/login_screen.dart';
 import 'package:spedition/features/containers/data/repositories/hive_container_repository.dart';
 import 'package:spedition/features/containers/data/repositories/hive_pending_operation_store.dart';
 import 'package:spedition/features/containers/data/sources/container_api.dart';
 import 'package:spedition/features/containers/presentation/providers/container_providers.dart';
-import 'package:spedition/features/settings/data/repositories/hive_settings_store.dart';
 import 'package:spedition/main.dart';
 
 void main() {
@@ -19,7 +23,6 @@ void main() {
     Hive.init(tempDir.path);
     await Hive.openBox<Map<dynamic, dynamic>>(containersBoxName);
     await Hive.openBox<Map<dynamic, dynamic>>(pendingOperationsBoxName);
-    await Hive.openBox<Map<dynamic, dynamic>>(settingsBoxName);
   });
 
   tearDown(() async {
@@ -27,14 +30,35 @@ void main() {
     await tempDir.delete(recursive: true);
   });
 
-  testWidgets('App zeigt persistente Navigationsleiste mit den Tabs',
+  testWidgets('Ohne Session erscheint der Login', (tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(
+        // Kein Override → initialAuthSession ist null (nicht angemeldet).
+        child: SpeditionApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LoginScreen), findsOneWidget);
+    expect(find.text('Subdomain (Mandant)'), findsOneWidget);
+    expect(find.text('Benutzername'), findsOneWidget);
+    expect(find.text('Passwort'), findsOneWidget);
+  });
+
+  testWidgets('Mit Session erscheint die Navigationsleiste mit Konto-Tab',
       (tester) async {
+    const session = AuthSession(
+      subdomain: 'test',
+      token: 'tok',
+      user: AuthUser(id: '1', username: 'fahrer'),
+    );
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          initialAuthSessionProvider.overrideWithValue(session),
           // Keine echte API im Test (kein Netz, deterministisch).
           containerApiProvider.overrideWithValue(
-            const ContainerApi(baseUrl: '', apiKey: ''),
+            ContainerApi(baseUrl: '', token: '', client: http.Client()),
           ),
         ],
         child: const SpeditionApp(),
@@ -42,18 +66,16 @@ void main() {
     );
     await tester.pump();
 
-    // Untere Navigationsleiste ist da, mit den Tabs.
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text('Karte'), findsOneWidget);
     expect(find.text('Scannen'), findsOneWidget);
-    expect(find.text('Einstellungen'), findsWidgets);
+    expect(find.text('Konto'), findsWidgets);
 
-    // Wechsel auf Einstellungen: Leiste bleibt sichtbar, der Screen erscheint.
-    await tester.tap(find.text('Einstellungen').last);
+    // Wechsel auf Konto: Leiste bleibt sichtbar, der Logout-Button erscheint.
+    await tester.tap(find.text('Konto').last);
     await tester.pumpAndSettle();
 
     expect(find.byType(NavigationBar), findsOneWidget);
-    // Zwei Backend-Profile → zwei Subdomain-Felder.
-    expect(find.text('Subdomain (Mandant)'), findsNWidgets(2));
+    expect(find.text('Abmelden'), findsOneWidget);
   });
 }

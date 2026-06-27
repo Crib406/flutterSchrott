@@ -55,18 +55,29 @@ class ScanResult {
 }
 
 /// REST-Client für die Container-API des Mandanten. Einzige Stelle der App,
-/// die Endpunkte, Auth-Header und JSON-Format des Backends kennt.
+/// die Endpunkte und JSON-Format des Backends kennt.
+///
+/// Authentifizierung (Bearer-Token) und das zentrale 401-Handling liegen im
+/// injizierten [client] (`AuthHttpClient`) – dieser Client kennt nur noch die
+/// Endpunkte selbst.
 class ContainerApi {
-  const ContainerApi({required this.baseUrl, required this.apiKey});
+  const ContainerApi({
+    required this.baseUrl,
+    required this.token,
+    required this.client,
+  });
 
   /// Mandanten-Basis-URL (z. B. `https://mandant.app.de`).
   final String baseUrl;
 
-  /// API-Key im Format `prefix.secret`.
-  final String apiKey;
+  /// Bearer-Token der aktiven Session (für die [isConfigured]-Prüfung).
+  final String token;
 
-  /// `true`, wenn Base-URL und Key gesetzt sind.
-  bool get isConfigured => baseUrl.isNotEmpty && apiKey.isNotEmpty;
+  /// HTTP-Client mit Auth-Header + 401-Interceptor.
+  final http.Client client;
+
+  /// `true`, wenn Base-URL und Token gesetzt sind.
+  bool get isConfigured => baseUrl.isNotEmpty && token.isNotEmpty;
 
   /// Base-URL ohne abschließenden Schrägstrich (robust gegen `…/`).
   String get _root =>
@@ -76,17 +87,12 @@ class ContainerApi {
   /// Vorgang dauerhaft blockiert (wird als Netzfehler behandelt → später erneut).
   static const Duration _requestTimeout = Duration(seconds: 30);
 
-  Map<String, String> get _authHeaders => {
-        'Authorization': 'Api-Key $apiKey',
-        'Accept': 'application/json',
-      };
-
   /// Lädt alle Container des Mandanten (ohne Filter).
   Future<List<ContainerItem>> fetchAll() async {
     final uri = Uri.parse('$_root/api/v1/container/');
     final http.Response response;
     try {
-      response = await http.get(uri, headers: _authHeaders).timeout(_requestTimeout);
+      response = await client.get(uri).timeout(_requestTimeout);
     } on Object catch (error) {
       throw ContainerApiException('Verbindung fehlgeschlagen: $error',
           isNetwork: true);
@@ -123,7 +129,6 @@ class ContainerApi {
   }) async {
     final uri = Uri.parse('$_root/api/v1/container/scan/');
     final request = http.MultipartRequest('POST', uri)
-      ..headers.addAll(_authHeaders)
       ..fields['uuid'] = uuid;
     if (latitude != null && longitude != null) {
       request.fields['lat'] = latitude.toString();
@@ -149,7 +154,7 @@ class ContainerApi {
 
     final http.Response response;
     try {
-      final streamed = await request.send().timeout(_requestTimeout);
+      final streamed = await client.send(request).timeout(_requestTimeout);
       response =
           await http.Response.fromStream(streamed).timeout(_requestTimeout);
     } on Object catch (error) {

@@ -29,16 +29,9 @@ abstract final class AppConfig {
 
   /// Fester Domain-Suffix der Container-API. Der Mandant wird ausschließlich
   /// über die Subdomain davor bestimmt (z. B. `kraus` → `kraus.fe.creimann.cc`).
-  /// In den Einstellungen gibt der Nutzer NUR die Subdomain ein; Schema und
-  /// dieser Suffix werden automatisch ergänzt.
+  /// Beim Login gibt der Nutzer NUR die Subdomain ein; Schema und dieser Suffix
+  /// werden automatisch ergänzt.
   static const String containerApiDomainSuffix = 'fe.creimann.cc';
-
-  /// Default-Subdomain (Mandant), falls in den Einstellungen noch nichts
-  /// hinterlegt ist. Über `--dart-define=CONTAINER_API_SUBDOMAIN=...` setzbar.
-  static const String defaultContainerSubdomain = String.fromEnvironment(
-    'CONTAINER_API_SUBDOMAIN',
-    defaultValue: 'kraus',
-  );
 
   /// Setzt die vollständige Base-URL aus einer Subdomain zusammen
   /// (`https://<subdomain>.fe.creimann.cc`). Leere Subdomain → leere URL.
@@ -49,12 +42,4 @@ abstract final class AppConfig {
     }
     return 'https://$trimmed.$containerApiDomainSuffix';
   }
-
-  /// Default-API-Key der Container-API im Format `prefix.secret`
-  /// (Header `Authorization: Api-Key …`). Über `--dart-define=CONTAINER_API_KEY=...`.
-  /// Dient als Vorbelegung, solange in den Einstellungen kein Key gesetzt ist.
-  static const String containerApiKey = String.fromEnvironment(
-    'CONTAINER_API_KEY',
-    defaultValue: '05619283.KwiwafGZEK8C8loZR0BdZ5cqmypo-8URZC1Zzvh2fmE',
-  );
 }
