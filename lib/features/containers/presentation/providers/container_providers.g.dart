@@ -407,6 +407,11 @@ String _$containerFacetsHash() => r'3c80cbfb7068ba4e7773643d3a2eeb25c1ad1967';
 /// Warteschlange aller Scan-Vorgänge. Reicht jeden Scan asynchron beim Backend
 /// ein (foto + stabile UUID), pollt das Ergebnis und setzt anschließend
 /// Standort + Status. Online sofort, sonst sobald wieder online.
+// keepAlive: Die Warteschlange ist ein app-globaler, persistenter Dienst (Hive +
+// Badge in der AppShell) und führt asynchrone Uploads aus. Sie darf NICHT
+// autoDispose sein – sonst kann ein noch laufender `_flush` nach dem Entsorgen des
+// Providers `state` setzen → „Cannot use Ref after it has been disposed" → die
+// unbehandelte Exception zerlegt den Frame-Aufbau → schwarzer Bildschirm.
 
 @ProviderFor(OperationQueue)
 final operationQueueProvider = OperationQueueProvider._();
@@ -414,18 +419,28 @@ final operationQueueProvider = OperationQueueProvider._();
 /// Warteschlange aller Scan-Vorgänge. Reicht jeden Scan asynchron beim Backend
 /// ein (foto + stabile UUID), pollt das Ergebnis und setzt anschließend
 /// Standort + Status. Online sofort, sonst sobald wieder online.
+// keepAlive: Die Warteschlange ist ein app-globaler, persistenter Dienst (Hive +
+// Badge in der AppShell) und führt asynchrone Uploads aus. Sie darf NICHT
+// autoDispose sein – sonst kann ein noch laufender `_flush` nach dem Entsorgen des
+// Providers `state` setzen → „Cannot use Ref after it has been disposed" → die
+// unbehandelte Exception zerlegt den Frame-Aufbau → schwarzer Bildschirm.
 final class OperationQueueProvider
     extends $NotifierProvider<OperationQueue, List<PendingOperation>> {
   /// Warteschlange aller Scan-Vorgänge. Reicht jeden Scan asynchron beim Backend
   /// ein (foto + stabile UUID), pollt das Ergebnis und setzt anschließend
   /// Standort + Status. Online sofort, sonst sobald wieder online.
+  // keepAlive: Die Warteschlange ist ein app-globaler, persistenter Dienst (Hive +
+  // Badge in der AppShell) und führt asynchrone Uploads aus. Sie darf NICHT
+  // autoDispose sein – sonst kann ein noch laufender `_flush` nach dem Entsorgen des
+  // Providers `state` setzen → „Cannot use Ref after it has been disposed" → die
+  // unbehandelte Exception zerlegt den Frame-Aufbau → schwarzer Bildschirm.
   OperationQueueProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'operationQueueProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -446,11 +461,16 @@ final class OperationQueueProvider
   }
 }
 
-String _$operationQueueHash() => r'1a0751f531edf04f9e8c0346627e1f83603775be';
+String _$operationQueueHash() => r'efb575ce93e2979063269905af056ee8f5fb0bed';
 
 /// Warteschlange aller Scan-Vorgänge. Reicht jeden Scan asynchron beim Backend
 /// ein (foto + stabile UUID), pollt das Ergebnis und setzt anschließend
 /// Standort + Status. Online sofort, sonst sobald wieder online.
+// keepAlive: Die Warteschlange ist ein app-globaler, persistenter Dienst (Hive +
+// Badge in der AppShell) und führt asynchrone Uploads aus. Sie darf NICHT
+// autoDispose sein – sonst kann ein noch laufender `_flush` nach dem Entsorgen des
+// Providers `state` setzen → „Cannot use Ref after it has been disposed" → die
+// unbehandelte Exception zerlegt den Frame-Aufbau → schwarzer Bildschirm.
 
 abstract class _$OperationQueue extends $Notifier<List<PendingOperation>> {
   List<PendingOperation> build();

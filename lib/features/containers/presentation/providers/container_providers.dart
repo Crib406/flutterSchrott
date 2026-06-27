@@ -125,7 +125,12 @@ ContainerFacets containerFacets(Ref ref) => ContainerFacets.from(
 /// Warteschlange aller Scan-Vorgänge. Reicht jeden Scan asynchron beim Backend
 /// ein (foto + stabile UUID), pollt das Ergebnis und setzt anschließend
 /// Standort + Status. Online sofort, sonst sobald wieder online.
-@riverpod
+// keepAlive: Die Warteschlange ist ein app-globaler, persistenter Dienst (Hive +
+// Badge in der AppShell) und führt asynchrone Uploads aus. Sie darf NICHT
+// autoDispose sein – sonst kann ein noch laufender `_flush` nach dem Entsorgen des
+// Providers `state` setzen → „Cannot use Ref after it has been disposed" → die
+// unbehandelte Exception zerlegt den Frame-Aufbau → schwarzer Bildschirm.
+@Riverpod(keepAlive: true)
 class OperationQueue extends _$OperationQueue {
   bool _flushing = false;
 
@@ -189,12 +194,19 @@ class OperationQueue extends _$OperationQueue {
   }
 
   Future<void> _maybeFlush() async {
-    if (await ref.read(connectivityServiceProvider).isOnline()) {
+    final online = await ref.read(connectivityServiceProvider).isOnline();
+    // Nach dem `await` kann der Provider entsorgt sein – dann nicht weitermachen.
+    if (online && ref.mounted) {
       await _flush();
     }
   }
 
   void _set(String id, PendingOpStatus status, [String? message]) {
+    // Kann nach einem `await` (Upload) zurückkehren, wenn der Provider bereits
+    // entsorgt wurde – dann `state`/`ref` NICHT mehr anfassen (sonst Exception).
+    if (!ref.mounted) {
+      return;
+    }
     state = [
       for (final op in state)
         if (op.id == id) op.copyWith(status: status, message: message) else op,
@@ -228,6 +240,10 @@ class OperationQueue extends _$OperationQueue {
         }
         didProcess = true;
         final keepGoing = await _process(api, state[index]);
+        // Während des Uploads kann der Provider entsorgt worden sein.
+        if (!ref.mounted) {
+          return;
+        }
         if (!keepGoing) {
           break; // Netzfehler → später erneut versuchen.
         }
@@ -240,8 +256,11 @@ class OperationQueue extends _$OperationQueue {
     // damit die asynchron erkannten Container erscheinen.
     if (didProcess && !state.any((op) => op.isPending)) {
       unawaited(
-        Future<void>.delayed(_refreshDelay)
-            .then((_) => ref.read(containerListProvider.notifier).refresh()),
+        Future<void>.delayed(_refreshDelay).then((_) {
+          if (ref.mounted) {
+            ref.read(containerListProvider.notifier).refresh();
+          }
+        }),
       );
     }
   }

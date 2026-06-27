@@ -46,25 +46,42 @@ class _GpsAccuracyDialogState extends State<GpsAccuracyDialog> {
   double? _accuracy;
   String? _error;
 
+  /// Verhindert ein zweites `pop()`: Der Standort-Stream feuert fortlaufend, auch
+  /// nachdem ein genauer Fix den Dialog bereits geschlossen hat. Ohne diese Sperre
+  /// würde eine spätere Emission erneut poppen und eine ECHTE Seite vom
+  /// (go_router-)Stack entfernen → „popped the last page" → schwarzer Bildschirm.
+  bool _closed = false;
+
   @override
   void initState() {
     super.initState();
     _sub = widget.stream.listen(
       (fix) {
-        if (!mounted) {
+        if (!mounted || _closed) {
           return;
         }
         setState(() => _accuracy = fix.accuracy);
         if (fix.accuracy <= widget.targetMeters) {
-          Navigator.of(context).pop(fix);
+          _close(fix);
         }
       },
       onError: (Object error) {
-        if (mounted) {
+        if (mounted && !_closed) {
           setState(() => _error = error.toString());
         }
       },
     );
+  }
+
+  /// Schließt den Dialog GENAU EINMAL und stoppt vorher den Stream, damit keine
+  /// weitere Emission einen zweiten `pop()` auslösen kann.
+  void _close([GpsFix? result]) {
+    if (_closed || !mounted) {
+      return;
+    }
+    _closed = true;
+    unawaited(_sub?.cancel());
+    Navigator.of(context).pop(result);
   }
 
   @override
@@ -123,7 +140,7 @@ class _GpsAccuracyDialogState extends State<GpsAccuracyDialog> {
       content: body,
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: _close,
           child: Text(_error != null ? 'Schließen' : 'Abbrechen'),
         ),
       ],
